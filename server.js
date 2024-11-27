@@ -4,7 +4,6 @@ const { Server } = require('socket.io');
 const path = require('path');
 const bodyParser = require('body-parser');
 
-// アプリとサーバーのセットアップ
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -12,10 +11,10 @@ const io = new Server(server);
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ユーザーデータ (簡易的なユーザー認証)
+// ユーザー情報 (簡易認証用のデータベース)
 const users = [
   { username: 'user1', password: 'pass1' },
-  { username: 'user2', password: 'pass2' }
+  { username: 'user2', password: 'pass2' },
 ];
 
 // ログインAPI
@@ -33,12 +32,17 @@ app.post('/login', (req, res) => {
 io.on('connection', (socket) => {
   console.log('A user connected');
 
-  // メッセージ受信時
-  socket.on('chat message', (msg) => {
-    io.emit('chat message', msg); // すべてのクライアントに送信
+  // ユーザーを特定のルームに参加させる
+  socket.on('join room', (room) => {
+    socket.join(room);
+    console.log(`User joined room: ${room}`);
   });
 
-  // 切断時
+  // メッセージを同じルームのユーザーに送信
+  socket.on('chat message', ({ room, message, username }) => {
+    io.to(room).emit('chat message', { username, message });
+  });
+
   socket.on('disconnect', () => {
     console.log('A user disconnected');
   });
