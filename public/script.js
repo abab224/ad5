@@ -3,22 +3,37 @@ document.addEventListener('DOMContentLoaded', () => {
   
     if (loginBtn) {
       loginBtn.addEventListener('click', async () => {
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
   
-        const res = await fetch('/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
-        });
+        if (!username || !password) {
+          document.getElementById('error-message').innerText = 'Please enter both username and a 4-digit password.';
+          return;
+        }
   
-        if (res.ok) {
-          // パスワードを localStorage に保存
-          localStorage.setItem('username', username);
-          localStorage.setItem('room', password);
-          window.location.href = '/chat.html';
-        } else {
-          document.getElementById('error-message').innerText = 'Login failed. Try again.';
+        if (!/^\d{4}$/.test(password)) {
+          document.getElementById('error-message').innerText = 'Password must be a 4-digit number.';
+          return;
+        }
+  
+        try {
+          const res = await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+  
+          if (res.ok) {
+            localStorage.setItem('username', username);
+            localStorage.setItem('room', password);
+            window.location.href = '/chat.html';
+          } else {
+            const data = await res.json();
+            document.getElementById('error-message').innerText = data.message || 'Login failed. Try again.';
+          }
+        } catch (error) {
+          console.error('Error during login:', error);
+          document.getElementById('error-message').innerText = 'An error occurred. Please try again.';
         }
       });
     }

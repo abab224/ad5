@@ -11,34 +11,35 @@ const io = new Server(server);
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ユーザー情報 (簡易認証用のデータベース)
-const users = [
-  { username: 'user1', password: 'pass1' },
-  { username: 'user2', password: 'pass2' },
-];
-
 // ログインAPI
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  const user = users.find(u => u.username === username && u.password === password);
-  if (user) {
-    res.status(200).json({ success: true });
-  } else {
-    res.status(401).json({ success: false, message: 'Invalid username or password' });
+
+  // 入力のバリデーション
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: 'Username and password are required' });
   }
+
+  // パスワードが4桁の数字であることを確認
+  if (!/^\d{4}$/.test(password)) {
+    return res.status(400).json({ success: false, message: 'Password must be a 4-digit number' });
+  }
+
+  // ログイン成功（簡易実装）
+  res.status(200).json({ success: true });
 });
 
 // Socket.IO 接続処理
 io.on('connection', (socket) => {
   console.log('A user connected');
 
-  // ユーザーを特定のルームに参加させる
+  // ルームに参加
   socket.on('join room', (room) => {
     socket.join(room);
     console.log(`User joined room: ${room}`);
   });
 
-  // メッセージを同じルームのユーザーに送信
+  // メッセージの送受信
   socket.on('chat message', ({ room, message, username }) => {
     io.to(room).emit('chat message', { username, message });
   });
